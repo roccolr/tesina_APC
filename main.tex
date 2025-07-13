@@ -75,9 +75,9 @@ Un sistema è composto da 3 unità, A, B e C, tra loro collegate mediante due pe
 Dalla traccia emerge che la comunicazione debba essere gestita in modo tale da garantire la \textit{non sovrapposizione} dei messaggi ricevuti da B e da C. Questo implica che verrà utilizzato un unico buffer di ricezione in cui verranno conservati i messaggi ricevuti, e che una periferica non potrà mandare un nuovo carattere se l'altra non avrà finito la trasmissione di un intero messaggio. La ricezione dei messaggi in modo alternato pone il vincolo, nella codifica della ISR, di considerare casuale la provenienza del primo messaggio. Ci sono due modi di interpretare questo passo della traccia:
 \begin{itemize}
 	\item Il primo messaggio può arrivare da qualsiasi periferica, e una volta arrivato questo stabilisce l'ordine di arrivo di tutti gli altri K-1 messaggi;
-	\item I messaggi vengono ricevuti in modo alternato ma a coppie, ovvero \textbf{per ogni coppia} il primo messaggio può provenire da qualsiasi periferica, ma l'altro deve provenire necessariamente dall'altra.
+	\item I messaggi vengono ricevuti in modo alternato ma a coppie, ovvero \textbf{per ogni coppia} il primo messaggio può provenire da qualsiasi periferica, ma il secondo deve provenire necessariamente dall'altra.
 \end{itemize}
-La soluzione presentata più avanti si basa sulla seconda ipotesi. Sotto questi vincoli, i conflitti da gestire sono:
+La soluzione presentata più avanti si basa sulla seconda interpretazione. Sotto questi vincoli, i conflitti da gestire sono:
 \begin{itemize}
 	\item Accesso in mutua esclusione in scrittura alla risorsa rappresentata dal nodo A, in modo da garantire la non sovrapposizione dei messaggi;
 	\item Regolare l'accesso alla risorsa in modo che sia alternato, curando i casi in cui le ISR pongano una periferica in stato di attesa. 
@@ -134,7 +134,36 @@ La soluzione presentata più avanti si basa sulla seconda ipotesi. Sotto questi 
 %----------------------------------------------------------------------------------------
 
 \section{Mappa della memoria}
-Todo: Implementa uno schema con la mappa della memoria dopo aver sistemato il file cfg ASIM. 
+In questa sezione verrà presentata una mappa della memoria del nodo A in accordo a quanto specificato nel file .cfg utilizzato nella simulazione.
+
+\begin{center}
+    
+    \begin{tikzpicture}[scale=1]
+        % Rettangolo principale
+        \draw (0,0) rectangle (5,8);
+        \node at (2.5,8.3) {\textbf{Memory Map}};
+        
+        % Code segment
+        \draw (0,7) rectangle (5,8);
+        \node[left=5pt] at (0,7.5) {Code Segment};
+        \node[right=5pt] at (5,7.5) {\texttt{0x0000}};
+        
+        % Data segment
+        \draw (0,5) rectangle (5,7);
+        \node[left=5pt] at (0,6) {Data Segment};
+        \node[right=5pt] at (5,6) {\texttt{0x2000}};
+        
+        % Heap
+        \draw (0,3) rectangle (5,5);
+        \node[left=5pt] at (0,4) {Heap};
+        \node[right=5pt] at (5,4) {\texttt{0x4000}};
+        
+        % Stack
+        \draw (0,0) rectangle (5,3);
+        \node[left=5pt] at (0,1.5) {Stack};
+        \node[right=5pt] at (5,1.5) {\texttt{0x6000}};
+    \end{tikzpicture}
+\end{center}
 % Proin lobortis efficitur dictum. Pellentesque vitae pharetra eros, quis dignissim magna. Sed tellus leo, semper non vestibulum vel, tincidunt eu mi. Aenean pretium ut velit sed facilisis. Ut placerat urna facilisis dolor suscipit vehicula. Ut ut auctor nunc. Nulla non massa eros. Proin rhoncus arcu odio, eu lobortis metus sollicitudin eu. Duis maximus ex dui, id bibendum diam dignissim id. Aliquam quis lorem lorem. Phasellus sagittis aliquet dolor, vulputate cursus dolor convallis vel. Suspendisse eu tellus feugiat, bibendum lectus quis, fermentum nunc. Nunc euismod condimentum magna nec bibendum. Curabitur elementum nibh eu sem cursus, eu aliquam leo rutrum. Sed bibendum augue sit amet pharetra ullamcorper. Aenean congue sit amet tortor vitae feugiat.
 
 % In congue risus leo, in gravida enim viverra id. Donec eros mauris, bibendum vel dui at, tempor commodo augue. In vel lobortis lacus. Nam ornare ullamcorper mauris vel molestie. Maecenas vehicula ornare turpis, vitae fringilla orci consectetur vel. Nam pulvinar justo nec neque egestas tristique. Donec ac dolor at libero congue varius sed vitae lectus. Donec et tristique nulla, sit amet scelerisque orci. Maecenas a vestibulum lectus, vitae gravida nulla. Proin eget volutpat orci. Morbi eu aliquet turpis. Vivamus molestie urna quis tempor tristique. Proin hendrerit sem nec tempor sollicitudin.
@@ -195,12 +224,13 @@ Descrizione delle variabili utilizzate:
 \subsection{Pseudocodice}
 Assumiamo che ISR\_B e ISR\_C siano speculari, e che ISR\_B sia più prioritaria di ISR\_C : se il nodo A riceve un messaggio da C durante l'esecuzione di ISR\_B, ISR\_C prelaziona ISR\_B. Come anticipato nella sezione \ref{sec:traccia}, l'accesso alla sezione critica in cui si controlla ed eventualmente modifica la variabile \textit{possesso} avverrà in mutua esclusione.
 
+\vspace{2\baselineskip}
 \begin{lstlisting}
 # define is_reading_b 0
 # define is_reading_c 1
 # define is_free -1 
 
-isr_b(){
+void isr_b(){
     if(!fine){
         if(TAS(lock)){
             if(possesso !=c and !end_b){
@@ -238,7 +268,8 @@ isr_b(){
                         tot++;
                         curr++;
                         buff[tot-1] = PIACPRA;
-                        if(buff[tot-1] == 0){
+                        // se c interrompe qui, trovera' possesso=is_free
+                        if(buff[tot-1] == 0 && fase2){
                             cond_c=1;
                         }
                         possesso = is_reading_c;
@@ -249,16 +280,19 @@ isr_b(){
                     tot++;
                     curr++;
                     buff[tot-1] = PIACPRA;
-                    if(buff[tot-1] == 0){
+                    if(buff[tot-1] == 0 && fase2){
                         cond_c=1;
                     }
                     possesso = is_reading_c;
                 }
             case is_reading_c{
                 if(c_sus){
+                // L'unica assunzione possibile e' che 
+                // questo non sia il primo carattere di b
                     idx = tot;
                     tot++;
                     curr++;
+                    possesso = is_reading_c;
                     if(curr == N){
                         curr = 0;
                         msg++;
@@ -285,15 +319,15 @@ isr_b(){
                             possesso = is_reading_b;
                         }
                     }
-                    possesso = is_reading_c;
+                    buff[idx]=PIACPRA;
                 }
             }
         }   
         RTE;
-    }else{
+    }else{  // se fine == 1
         RTE;
     }
-}
+} // fine isr_b 
 \end{lstlisting}
 
 \end{document}

@@ -43,7 +43,7 @@ isr_b(){
                         tot++;
                         curr++;
                         buff[tot-1] = PIACPRA;
-                        if(buff[tot-1] == 0){
+                        if(buff[tot-1] == 0 && fase2){
                             cond_c=1;
                         }
                         possesso = is_reading_c;
@@ -54,7 +54,7 @@ isr_b(){
                     tot++;
                     curr++;
                     buff[tot-1] = PIACPRA;
-                    if(buff[tot-1] == 0){
+                    if(buff[tot-1] == 0 && fase2){
                         cond_c=1;
                     }
                     possesso = is_reading_c;
