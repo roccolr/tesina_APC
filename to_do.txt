@@ -1,0 +1,4 @@
+prova intercorso 22_05_2025
+    - pseudocodice 
+    - simulazione ASIM 
+
