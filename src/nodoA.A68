@@ -215,7 +215,7 @@ RETURN  MOVEM.L (SP)+,D0-D7/A0-A2
         RTE 
          
 ****************************************************
-        ORG     $8700
+        ORG     $8800
 ISR_C   MOVEM.L D0-D7/A0-A2,-(SP)
         MOVE    FINE,D0 
         CMP     #$01,D0 
