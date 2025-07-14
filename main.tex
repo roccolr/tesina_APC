@@ -134,34 +134,111 @@ La soluzione presentata più avanti si basa sulla seconda interpretazione. Sotto
 %----------------------------------------------------------------------------------------
 
 \section{Mappa della memoria}
-In questa sezione verrà presentata una mappa della memoria del nodo A in accordo a quanto specificato nel file .cfg utilizzato nella simulazione.
+In questa sezione verrà presentata una mappa della memoria del nodo A in accordo a quanto specificato nel file .cfg utilizzato nella simulazione e in accordo alla memoria caricata (\textit{file rom.mem}).
 
 \begin{center}
     
-    \begin{tikzpicture}[scale=1]
+    \begin{tikzpicture}[scale=0.9]
         % Rettangolo principale
-        \draw (0,0) rectangle (5,8);
-        \node at (2.5,8.3) {\textbf{Memory Map}};
+        \draw (0,0) rectangle (5,20);
+        \node at (2.4,20.3) {\textbf{Mappa memoria}};
         
-        % Code segment
-        \draw (0,7) rectangle (5,8);
-        \node[left=5pt] at (0,7.5) {Code Segment};
-        \node[right=5pt] at (5,7.5) {\texttt{0x0000}};
+        % vuoto
+        \draw (0,20) rectangle (5,19);
+        \node[right=5pt] at (5,19.5) {\texttt{\$00000000}};
+        \fill[lightgray] (0,20) rectangle (5,19);
+        % INT3
+        \fill[red!20](0,19) rectangle (5,17);
+        \draw (0,19) rectangle (5,18);
+        \node[left=5pt] at (0,18.5) {ISR\_B};
+        \node[right=5pt] at (5,18.5) {\texttt{\$0000006C}};
+        \node at (2.5,18.5) {\$00008700}; 
         
-        % Data segment
-        \draw (0,5) rectangle (5,7);
-        \node[left=5pt] at (0,6) {Data Segment};
-        \node[right=5pt] at (5,6) {\texttt{0x2000}};
+        % INT4 
+        \draw (0,18) rectangle (5,17);
+        \node[left=5pt] at (0,17.5) {ISR\_C};
+        \node[right=5pt] at (5,17.5) {\texttt{\$00000070}};
+        \node at (2.5,17.5) {\$00008800};
+
+        % vuoto
+        \draw (0,17) rectangle (5,16);
+        \fill[lightgray] (0,17) rectangle (5,16);
+        %PIA 
+        \fill[yellow!20](0,16) rectangle (5,8);
+        \draw(0,16) rectangle (5,15);
+        \node[right=5pt] at (5,15.5) {\texttt{\$00002004}};
+        \node at (2.5,15.5) {PIABPRA};
+        \draw(0,15) rectangle (5,14);
+        \node[right=5pt] at (5,14.5) {\texttt{\$00002005}};
+        \node at (2.5,14.5) {PIABCRA};
+        \draw(0,14) rectangle (5,13);
+        \node[right=5pt] at (5,13.5) {\texttt{\$00002006}};
+        \node at (2.5,13.5) {PIABPRB};
+        \draw(0,13) rectangle (5,12);
+        \node[right=5pt] at (5,12.5) {\texttt{\$00002007}};
+        \node at (2.5,12.5) {PIABCRB};
+
+        \draw(0,12) rectangle (5,11);
+        \node[right=5pt] at (5,11.5) {\texttt{\$00002008}};
+        \node at (2.5,11.5) {PIACPRA};
+        \draw(0,11) rectangle (5,10);
+        \node[right=5pt] at (5,10.5) {\texttt{\$00002009}};
+        \node at (2.5,10.5) {PIACCRA};
+        \draw(0,10) rectangle (5,9);
+        \node[right=5pt] at (5,9.5) {\texttt{\$0000200A}};
+        \node at (2.5,9.5) {PIACPRB};
+        \draw(0,9) rectangle (5,8);
+        \node[right=5pt] at (5,8.5) {\texttt{\$0000200B}};
+        \node at (2.5,8.5) {PIACCRB};
+
+        % vuoto
+        \draw (0,8) rectangle (5,7);
+        \fill[lightgray] (0,8) rectangle (5,7);
         
-        % Heap
-        \draw (0,3) rectangle (5,5);
-        \node[left=5pt] at (0,4) {Heap};
-        \node[right=5pt] at (5,4) {\texttt{0x4000}};
+        % DATI
+        \fill[green!10] (0,7) rectangle (5,0);
+        \draw(0,7) rectangle (5,6);
+        \node[right=5pt] at (5,6.5) {\texttt{\$00008000}};
+        \node at (2.5,6.5) {AREA DATI};
+
         
-        % Stack
-        \draw (0,0) rectangle (5,3);
-        \node[left=5pt] at (0,1.5) {Stack};
-        \node[right=5pt] at (5,1.5) {\texttt{0x6000}};
+        % vuoto
+        \draw (0,6) rectangle (5,5);
+        \fill[lightgray] (0,6) rectangle (5,5);
+        
+        % CODICE
+        \draw(0,5) rectangle (5,4);
+        \node[right=5pt] at (5,4.5) {\texttt{\$00008200}};
+        \node at (2.5,4.5) {AREA CODICE};
+
+        % vuoto
+        \draw (0,4) rectangle (5,3);
+        \fill[lightgray] (0,4) rectangle (5,3);
+
+        % ISRB 
+        \draw(0,3) rectangle (5,2);
+        \node[right=5pt] at (5,2.5) {\texttt{\$00008700}};
+        \node at (2.5,2.5) {ISR\_B};
+
+        % vuoto
+        \draw (0,2) rectangle (5,1);
+        \fill[lightgray] (0,2) rectangle (5,1);
+
+        % ISRC
+        \draw(0,1) rectangle (5,0);
+        \node[right=5pt] at (5,0.5) {\texttt{\$00008800}};
+        \node at (2.5,0.5) {ISR\_C};
+
+        % vuoto 
+        \draw(0,0) rectangle (5,-1);
+        \fill[lightgray](0,0) rectangle (5,-1);
+        % STACK
+        \fill[blue!20](0,-1) rectangle (5,-2);
+        \draw (0,-1) rectangle (5,-2);
+        \node[right=5pt] at (5,-1.5) {\texttt{\$00009000}};
+        \node at (2.5,-1.5) {STACK U-S};
+
+        \draw(0,-2) rectangle (5,20); % ricalco bordi
     \end{tikzpicture}
 \end{center}
 % Proin lobortis efficitur dictum. Pellentesque vitae pharetra eros, quis dignissim magna. Sed tellus leo, semper non vestibulum vel, tincidunt eu mi. Aenean pretium ut velit sed facilisis. Ut placerat urna facilisis dolor suscipit vehicula. Ut ut auctor nunc. Nulla non massa eros. Proin rhoncus arcu odio, eu lobortis metus sollicitudin eu. Duis maximus ex dui, id bibendum diam dignissim id. Aliquam quis lorem lorem. Phasellus sagittis aliquet dolor, vulputate cursus dolor convallis vel. Suspendisse eu tellus feugiat, bibendum lectus quis, fermentum nunc. Nunc euismod condimentum magna nec bibendum. Curabitur elementum nibh eu sem cursus, eu aliquam leo rutrum. Sed bibendum augue sit amet pharetra ullamcorper. Aenean congue sit amet tortor vitae feugiat.
