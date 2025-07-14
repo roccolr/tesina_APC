@@ -285,10 +285,10 @@ Descrizione delle variabili utilizzate:
 
 \begin{description}[style=nextline,leftmargin=3.45cm,labelwidth=2.8cm,labelsep=0.6cm,font=\ttfamily\bfseries]
   \item[fine] Intero che può assumere i valori 0 (il nodo A è in ricezione) o 1 (il nodo A ha terminato la ricezione).
-  \item[lock] Intero che può assumere i valori 0 o 1, viene testato dall'istruzione atomica LOCK per garantire l'accesso mutualmente esclusivo alla sezione critica.
+  \item[lock] Intero che può assumere i valori 0 o 1, viene testato dall'istruzione atomica TAS per garantire l'accesso mutualmente esclusivo alla sezione critica.
   \item[possesso] Intero che può assumere i valori -1 (\texttt{is\_free}), 0 (\texttt{is\_reading\_b}) o 1 (\texttt{is\_reading\_c}).
   \item[buff] Puntatore alla prima locazione di un vettore di dimensione K*N di caratteri; serve per accedere alla memoria del nodo A.
-  \item[curr] Variabile intera da 0 a N che tiene conto dei caratteri ricevuti.
+  \item[curr] Intero da 0 a N che tiene conto dei caratteri ricevuti.
   \item[tot] Intero da 0 a K*N per l’accesso indirizzato al vettore dei caratteri.
   \item[msg] Intero da 0 a K che conta i messaggi ricevuti.
   \item[end\_b,(end\_c)] Intero: 0 se il messaggio da b (c) non è terminato, 1 altrimenti.
@@ -297,7 +297,7 @@ Descrizione delle variabili utilizzate:
   \item[b\_sus,(c\_sus)] Intero: 0 se b (c) non è bloccato, 1 se è in attesa che venga letto il carattere.
   \item[idx] Variabile temporanea per memorizzare un valore della variabile \texttt{tot}.
 \end{description}
-
+\newpage
 \subsection{Pseudocodice}
 Assumiamo che ISR\_B e ISR\_C siano speculari, e che ISR\_B sia più prioritaria di ISR\_C : se il nodo A riceve un messaggio da C durante l'esecuzione di ISR\_B, ISR\_C prelaziona ISR\_B. Come anticipato nella sezione \ref{sec:traccia}, l'accesso alla sezione critica in cui si controlla ed eventualmente modifica la variabile \textit{possesso} avverrà in mutua esclusione.
 
@@ -378,7 +378,6 @@ void isr_b(){
                         if (end_b){
                             end_b = 0;
                             end_c = 0;
-                            msg++;
                             if(msg == k){
                                 fase2=1;
                             }
@@ -406,5 +405,228 @@ void isr_b(){
     }
 } // fine isr_b 
 \end{lstlisting}
+\newpage
+\subsection{Codice assembly MC68000}
+Di seguito viene esposta la codifica in assembly, basata sullo pseudocodice esposto nel paragrafo precedente, del programma eseguito dal nodo A e delle ISR relative alla ricezioni di caratteri sulla parallela proveniente da B e C. I programmi eseguiti dai nodi B e C consistono in semplici cicli di invio di messaggi tramite parallela. 
+\vspace{2\baselineskip}
 
+\begin{lstlisting}[language=RISCAsm]
+        ORG     $8000       * AREA DATI
+FINE    DC.B    0
+LOCK    DC.B    0
+POSS    DC.B    -1
+CURR    DC.B    0
+TOT     DC.B    0
+MSG     DC.B    0 
+END_B   DC.B    0 
+END_C   DC.B    0 
+FASE2   DC.B    0
+COND_B  DC.B    0
+COND_C  DC.B    0
+BUFF    DS.B    18
+
+        ORG     $8200       * AREA CODICE
+PIABPRA EQU     $2004
+PIABCRA EQU     $2005
+PIACPRA EQU     $2008
+PIACCRA EQU     $2009
+N       EQU     3
+K       EQU     6
+
+MAIN    JSR     PIAINIT
+        MOVE.W  SR,D0 
+        ANDI.W  #$D8FF,D0
+        MOVE.W  D0,SR 
+LOOP    JMP     LOOP 
+
+
+PIAINIT MOVE    #$00,PIABCRA 
+        MOVE    #$00,PIABPRA 
+        MOVE    #%00100101,PIABCRA 
+        MOVE    #$00,PIACCRA 
+        MOVE    #$00,PIACPRA 
+        MOVE    #%00100101,PIACCRA
+        RTS  
+
+        ORG     $8700
+ISR_B   MOVEM.L D0-D7/A0-A2,-(SP)
+        MOVE    FINE,D0 
+        CMP     #$01,D0 
+        BEQ     RETURN 
+        TAS     LOCK 
+        BNE     RETURN 
+        MOVE    POSS,D0
+        CMP     #1,D0 
+        BEQ     CONT0
+        MOVE    END_B,D0 
+        CMP     #1,D0 
+        BEQ     CONT0 
+        MOVE    #0,POSS 
+CONT0   MOVE    #0,LOCK 
+        MOVE    POSS,D0
+        CMP     #1,D0 
+        BEQ     CASE1
+        CMP     #-1,D0 
+        BEQ     CASE2 
+        MOVEA.L #PIABPRA,A0     * is_reading_b  
+        MOVEA.L #BUFF,A1 
+        MOVE    TOT,D0 
+        MOVE    CURR,D1 
+        MOVE    (A0),(A1,D0)
+        MOVE    (A1,D0),D2 
+        MOVE    FASE2,D3 
+        CMP     #0,D2
+        BNE     CONT1 
+        CMP     #1,D3 
+        BNE     CONT1 
+        CMP     #0,D1 
+        BNE     CONT1
+        MOVE    #1,COND_B
+CONT1   ADDQ    #1,D0
+        ADDQ    #1,D1 
+        MOVE    D0,TOT 
+        MOVE    D1,CURR 
+        CMP     #N,D1 
+        BNE     RETURN 
+        MOVE    #0,CURR 
+        MOVE    MSG,D0 
+        ADDQ    #1,D0 
+        MOVE    D0,MSG 
+        MOVE    #1,END_B
+        MOVE    #-1,POSS
+        MOVE    END_C,D1
+        CMP     #1,D1 
+        BNE     CONT2 
+        MOVE    #0,END_B
+        MOVE    #0,END_C 
+        CMP     K,D0 
+        BNE     CONT2 
+        MOVE    #1,FASE2
+CONT2   MOVE    FASE2,D0 
+        CMP     #1,D0 
+        BNE     CONT3 
+        MOVE    END_B,D0 
+        CMP     #1,D0 
+        BNE     CONT3
+        MOVE    END_C,D0 
+        CMP     #1,D0 
+        BNE     CONT3
+        MOVE    #1,FINE         * controllo c_sus 
+CONT3   MOVE    PIACCRA,D0 
+        ANDI    #%10000000,D0 
+        BEQ     RETURN 
+        MOVE    END_C,D0 
+        CMP     #1,D0 
+        BNE     RETURN 
+        MOVEA.L #PIACPRA,A0 
+        MOVEA.L #BUFF,D0
+        MOVE    TOT,D0
+        MOVE    TOT,D7 
+        MOVE    CURR,D1 
+        ADDQ    #1,D0
+        ADDQ    #1,D1 
+        MOVE    D0,TOT 
+        MOVE    D1,CURR 
+        MOVE    (A1),(A0,D7)
+        MOVE    (A0,D7),D0 
+        MOVE    FASE2,D1 
+        CMP     #1,D1 
+        BNE     CONT4
+        CMP     #0,D0 
+        BNE     CONT4 
+        MOVE    #1,COND_C
+CONT4   MOVE    #1,POSS 
+        JMP     RETURN 
+CASE1   MOVE    PIACCRA,D0      * is_reading_c 
+        ANDI    #%10000000,D0 
+        BEQ     RETURN 
+        MOVE    TOT,D7 
+        MOVE    TOT,D0 
+        MOVE    CURR,D1 
+        ADDQ    #1,D0
+        ADDQ    #1,D1
+        MOVE    D0,TOT
+        MOVE    D1,CURR 
+        MOVE    #1,POSS 
+        CMP     N,D1 
+        BNE     CONT5
+        MOVE    #0,CURR 
+        MOVE    MSG,D0 
+        ADDQ    #1,D0  
+        MOVE    D0,MSG 
+        MOVE    #1,END_C 
+        MOVE    #-1,POSS 
+        MOVE    END_B,D0 
+        CMP     #1,D0 
+        BNE     CONT6
+        MOVE    #0,END_B
+        MOVE    #0,END_C 
+        MOVE    MSG,D0 
+        CMP     K,D0
+        BNE     CONT6
+        MOVE    #1,FASE2 
+CONT6   MOVE    FASE2,D0 
+        CMP     #1,D0 
+        BNE     CONT7
+        MOVE    COND_B,D0 
+        CMP     #1,D0 
+        BNE     CONT7 
+        MOVE    COND_C,D0 
+        CMP     #1,D0 
+        BNE     CONT7 
+        MOVE    #1,FINE 
+CONT7   MOVE    END_B,D0 
+        CMP     #1,D0 
+        BNE     CONT5 
+        MOVE    TOT,D0 
+        MOVE    CURR,D1 
+        MOVEA.L #PIABDRA,A0
+        MOVEA.L #BUFF,A1 
+        MOVE    (A0),(A1,D0)
+        MOVE    (A1,D0),D2
+        ADDQ    #1,D0 
+        ADDQ    #1,D1 
+        MOVE    D0,TOT 
+        MOVE    D1,CURR 
+        MOVE    FASE2,D3 
+        CMP     #1,D3
+        BNE     CONT8 
+        CMP     #0,D2 
+        BNE     CONT8 
+        MOVE    #1,COND_B 
+CONT8   MOVE    #0,POSS 
+CONT5   MOVEA.L #PIACPRA,A0 
+        MOVEA.L #BUFF,A1 
+        MOVE    (A0),(A1,D7)
+        JMP     RETURN 
+CASE2   MOVE    PIACCRA,D0      * is_free 
+        ANDI    #%10000000,D0   
+        BEQ     RETURN 
+        MOVE    END_C,D0 
+        CMP     #1,D0 
+        BEQ     RETURN 
+        MOVE    TOT,D0 
+        MOVE    CURR,D1 
+        MOVEA.L #PIACPRA,A0
+        MOVEA.L #BUFF,A1 
+        MOVE    D0,D7 
+        ADDQ    #1,D0 
+        ADDQ    #1,D1 
+        MOVE    D0,TOT 
+        MOVE    D1,TOT 
+        MOVE    (A0),(A1,D7)
+        MOVE    (A1,D7),D2 
+        MOVE    FASE2,D3 
+        CMP     #1,D3 
+        BNE     CONT9
+        CMP     #0,D2 
+        BNE     CONT9
+        MOVE    #1,COND_C
+CONT9   MOVE    #1,POSS 
+        JMP     RETURN 
+RETURN  MOVEM.L (SP)+,D0-D7/A0-A2
+        RTE 
+\end{lstlisting}
+\vspace{1\baselineskip}
+La ISR\_C è stata omessa per motivi di spazio, essendo perfettamente speculare alla ISR\_B. 
 \end{document}

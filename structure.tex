@@ -52,8 +52,36 @@
   morekeywords={uint8_t, uint16_t, uint32_t, uint64_t, int8_t, int16_t, int32_t, int64_t, bool, true, false}, % tipi e parole chiave extra
   morecomment=[l]{//},                           % commenti con //
   morecomment=[s]{/*}{*/},                       % commenti multilinea
-  literate={->}{$\to$}{2}                       % sostituisce "->" con una freccia più carina
 }
+
+\lstdefinelanguage{RISCAsm}{
+  morekeywords={
+    ADDQ, SUM, ANDI, MOVE,MOVEA, MOVEM, DC, DS, sra, 
+    lw, sw, li, la, mv, 
+    BEQ, BNE, JMP, CMP, jalr, ret, 
+    NOP, lui, RTE, RTS, 
+    ecall, ebreak, ORG, EQU, JSR, CLR, TAS 
+  },
+  sensitive=true,
+  morecomment=[l]{\*},
+  morestring=[b]",
+  basicstyle=\ttfamily\small\color{black},
+  keywordstyle=\color{purple}\bfseries,
+  commentstyle=\color{teal}\itshape,
+  stringstyle=\color{orange},
+  numbers=left,
+  numberstyle=\small\color{gray},
+  stepnumber=1,
+  numbersep=4pt,
+  frame=single,
+  rulecolor=\color{black},
+  framesep=5pt,
+  xleftmargin=20pt,
+  framexleftmargin=15pt,
+  showstringspaces=false,
+  breaklines=true,
+}
+
 %----------------------------------------------------------------------------------------
 %	DOCUMENT MARGINS
 %----------------------------------------------------------------------------------------
