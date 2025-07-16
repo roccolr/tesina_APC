@@ -1,0 +1,49 @@
+00000000                                     1  * VOGLIO INVIARE 3 MESSAGGI DI 3 CARATTERI 
+00008000                                     2              ORG     $8000
+00008000  04 04 04 05 05 05 06 06 06 ...     3  MSG         DC.B    4,4,4,5,5,5,6,6,6,0,-2,-2
+0000800C  0C                                 4  DIM         DC.B    12
+0000800D  00                                 5  COUNT       DC.B    0 
+0000800E                                     6  
+00008200                                     7              ORG     $8200 
+00008200  =00002006                          8  PIADRB      EQU     $2006
+00008200  =00002007                          9  PIACRB      EQU     $2007 
+00008200                                    10  
+00008200  4EB9 0000822C                     11  MAIN        JSR     PIAINIT 
+00008206  40C0                              12              MOVE.W  SR,D0 
+00008208  0240 D8FF                         13              ANDI.W  #$D8FF,D0 
+0000820C  46C0                              14              MOVE.W  D0,SR
+0000820E                                    15  
+0000820E  207C 00008000                     16              MOVEA.L #MSG,A0 
+00008214  227C 00002006                     17              MOVEA.L #PIADRB,A1 
+0000821A                                    18  
+0000821A                                    19              * INVIO PRIMO 
+0000821A  1011                              20              MOVE.B  (A1),D0     *LETTURA FITTIZIA 
+0000821C  1290                              21              MOVE.B  (A0),(A1)
+0000821E  13FC 0001 0000800D                22              MOVE.B  #1,COUNT 
+00008226  4EF9 00008226                     23  LOOP        JMP     LOOP 
+0000822C                                    24  
+0000822C  11FC 0000 2007                    25  PIAINIT     MOVE.B  #0,PIACRB
+00008232  11FC 00FF 2006                    26              MOVE.B  #$FF,PIADRB 
+00008238  11FC 0025 2007                    27              MOVE.B  #%00100101,PIACRB 
+0000823E  4E75                              28              RTS 
+00008240                                    29  
+00008800                                    30              ORG     $8800    
+00008800  48E7 FFFE                         31  INT4        MOVEM.L D0-D7/A0-A6,-(SP)
+00008804  227C 00002006                     32              MOVEA.L #PIADRB,A1 
+0000880A  207C 00008000                     33              MOVEA.L #MSG,A0 
+00008810  1039 0000800C                     34              MOVE.B  DIM,D0 
+00008816  1239 0000800D                     35              MOVE.B  COUNT,D1
+0000881C                                    36  
+0000881C  B240                              37              CMP     D0,D1 
+0000881E  6700 0010                         38              BEQ     FINE
+00008822  1411                              39  INVIO       MOVE.B  (A1),D2     *LETTURA FITTIZIA 
+00008824  12B0 1000                         40              MOVE.B  (A0,D1),(A1)
+00008828  5241                              41              ADDQ    #1,D1
+0000882A  13C1 0000800D                     42              MOVE.B  D1,COUNT 
+00008830                                    43              
+00008830  4CDF 7FFF                         44  FINE        MOVEM.L (SP)+,D0-D7/A0-A6 
+00008834  4E73                              45              RTE 
+00008836                                    46              END     MAIN 
+
+No errors detected
+No warnings generated

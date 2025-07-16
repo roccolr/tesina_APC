@@ -64,6 +64,7 @@ isr_b(){
                     idx = tot;
                     tot++;
                     curr++;
+                    possesso = is_reading_c;
                     if(curr == N){
                         curr = 0;
                         msg++;
@@ -90,7 +91,7 @@ isr_b(){
                             possesso = is_reading_b;
                         }
                     }
-                    possesso = is_reading_c;
+                    buff[idx] = PIACPRA;
                 }
             }
         }   

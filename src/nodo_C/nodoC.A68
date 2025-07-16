@@ -1,7 +1,7 @@
 * VOGLIO INVIARE 3 MESSAGGI DI 3 CARATTERI 
             ORG     $8000
-MSG         DC.B    4,4,4,5,5,5,6,6,6
-DIM         DC.B    6
+MSG         DC.B    4,4,4,5,5,5,6,6,6,0,-2,-2
+DIM         DC.B    12
 COUNT       DC.B    0 
 
             ORG     $8200 
@@ -36,10 +36,15 @@ INT4        MOVEM.L D0-D7/A0-A6,-(SP)
 
             CMP     D0,D1 
             BEQ     FINE
-INVIO       MOVE    (A1),D0     *LETTURA FITTIZIA 
-            MOVE    (A0,D0),(A1)
+INVIO       MOVE.B  (A1),D2     *LETTURA FITTIZIA 
+            MOVE.B  (A0,D1),(A1)
             ADDQ    #1,D1
-            MOVE    D1,COUNT 
+            MOVE.B  D1,COUNT 
             
 FINE        MOVEM.L (SP)+,D0-D7/A0-A6 
             RTE 
+            END     MAIN 
+
+
+
+

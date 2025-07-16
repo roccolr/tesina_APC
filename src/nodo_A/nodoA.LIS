@@ -1,0 +1,402 @@
+00008000                                     1          ORG     $8000
+00008000  00                                 2  FINE    DC.B    0
+00008001  00                                 3  LOCK    DC.B    0
+00008002  FF                                 4  POSS    DC.B    -1
+00008003  00                                 5  CURR    DC.B    0
+00008004  00                                 6  TOT     DC.B    0
+00008005  00                                 7  MSG     DC.B    0 
+00008006  00                                 8  END_B   DC.B    0 
+00008007  00                                 9  END_C   DC.B    0 
+00008008  00                                10  FASE2   DC.B    0
+00008009  00                                11  COND_B  DC.B    0
+0000800A  00                                12  COND_C  DC.B    0
+0000800B                                    13  BUFF    DS.B    32
+0000802B                                    14  
+00008200                                    15          ORG     $8200
+00008200  =00002004                         16  PIABPRA EQU     $2004
+00008200  =00002005                         17  PIABCRA EQU     $2005
+00008200  =00002008                         18  PIACPRA EQU     $2008
+00008200  =00002009                         19  PIACCRA EQU     $2009
+00008200  =00000003                         20  N       EQU     3
+00008200  =00000006                         21  K       EQU     6
+00008200                                    22  
+00008200  4EB9 00008214                     23  MAIN    JSR     PIAINIT
+00008206  40C0                              24          MOVE.W  SR,D0 
+00008208  0240 D8FF                         25          ANDI.W  #$D8FF,D0
+0000820C  46C0                              26          MOVE.W  D0,SR 
+0000820E  4EF9 0000820E                     27  LOOP    JMP     LOOP 
+00008214                                    28  
+00008214                                    29  
+00008214                                    30  		
+00008214  11FC 0000 2005                    31  PIAINIT	MOVE.B  #0,PIABCRA
+0000821A  11FC 0000 2004                    32          MOVE.B  #$00,PIABPRA 
+00008220  11FC 0025 2005                    33          MOVE.B  #%00100101,PIABCRA
+00008226  11FC 0000 2009                    34          MOVE.B  #$00,PIACCRA
+0000822C  11FC 0000 2008                    35          MOVE.B  #$00,PIACPRA 
+00008232  11FC 0025 2009                    36          MOVE.B  #%00100101,PIACCRA
+00008238  4E75                              37          RTS  
+0000823A                                    38  
+00008300                                    39          ORG     $8300
+00008300  48E7 FFE0                         40  ISR_B   MOVEM.L D0-D7/A0-A2,-(SP)
+00008304  1039 00008000                     41          MOVE.B  FINE,D0 
+0000830A  B03C 0001                         42          CMP.B   #$01,D0 
+0000830E  6700 0370                         43          BEQ     RETURN 
+00008312  4AF9 00008001                     44          TAS     LOCK 
+00008318  6600 0366                         45          BNE     RETURN 
+0000831C  1039 00008002                     46          MOVE.B  POSS,D0
+00008322  B03C 0001                         47          CMP.B   #1,D0 
+00008326  6700 0018                         48          BEQ     CONT0
+0000832A  1039 00008006                     49          MOVE.B  END_B,D0 
+00008330  B07C 0001                         50          CMP     #1,D0 
+00008334  6700 000A                         51          BEQ     CONT0 
+00008338  13FC 0000 00008002                52          MOVE.B  #0,POSS 
+00008340  13FC 0000 00008001                53  CONT0   MOVE.B  #0,LOCK 
+00008348  1039 00008002                     54          MOVE.B  POSS,D0
+0000834E  0C00 0001                         55          CMPI.B  #1,D0 
+00008352  6700 0170                         56          BEQ     CASE1
+00008356  1039 00008002                     57          MOVE.B  POSS,D0
+0000835C  0C00 00FF                         58          CMPI.B	#-1,D0 
+00008360  6700 02A6                         59          BEQ     CASE2 
+00008364  207C 00002004                     60          MOVEA.L #PIABPRA,A0     * is_reading_b  
+0000836A  227C 0000800B                     61          MOVEA.L #BUFF,A1 
+00008370  1039 00008004                     62          MOVE.B  TOT,D0 
+00008376  1239 00008003                     63          MOVE.B  CURR,D1 
+0000837C  1390 0000                         64          MOVE.B  (A0),(A1,D0)
+00008380  1431 0000                         65          MOVE.B  (A1,D0),D2 
+00008384  1639 00008008                     66          MOVE.B  FASE2,D3 
+0000838A  0C02 0000                         67          CMPI.B	#0,D2
+0000838E  6600 001A                         68          BNE     CONT1 
+00008392  0C03 0001                         69          CMPI.B  #1,D3 
+00008396  6600 0012                         70          BNE     CONT1 
+0000839A  0C01 0000                         71          CMPI.B  #0,D1 
+0000839E  6600 000A                         72          BNE     CONT1
+000083A2  13FC 0001 00008009                73          MOVE.B  #1,COND_B
+000083AA  5240                              74  CONT1   ADDQ    #1,D0
+000083AC  5241                              75          ADDQ    #1,D1 
+000083AE  13C0 00008004                     76          MOVE.B  D0,TOT 
+000083B4  13C1 00008003                     77          MOVE.B  D1,CURR 
+000083BA  B23C 0003                         78          CMP.B   #N,D1 
+000083BE  6600 02C0                         79          BNE     RETURN 
+000083C2  13FC 0000 00008003                80          MOVE.B  #0,CURR 
+000083CA  1039 00008005                     81          MOVE.B  MSG,D0 
+000083D0  5240                              82          ADDQ    #1,D0 
+000083D2  13C0 00008005                     83          MOVE.B  D0,MSG 
+000083D8  13FC 0001 00008006                84          MOVE.B  #1,END_B
+000083E0  13FC 00FF 00008002                85          MOVE.B  #-1,POSS
+000083E8  1239 00008007                     86          MOVE.B  END_C,D1
+000083EE  0C01 0001                         87          CMPI.B  #1,D1 
+000083F2  6600 0022                         88          BNE     CONT2 
+000083F6  13FC 0000 00008006                89          MOVE.B  #0,END_B
+000083FE  13FC 0000 00008007                90          MOVE.B  #0,END_C 
+00008406  B03C 0006                         91          CMP.B   #K,D0 
+0000840A  6600 000A                         92          BNE	CONT2 
+0000840E  13FC 0001 00008008                93          MOVE.B  #1,FASE2
+00008416  1039 00008008                     94  CONT2   MOVE.B  FASE2,D0 
+0000841C  0C00 0001                         95          CMPI.B  #1,D0 
+00008420  6600 0026                         96          BNE     CONT3 
+00008424  1039 00008009                     97          MOVE.B  COND_B,D0 
+0000842A  0C00 0001                         98          CMPI.B  #1,D0 
+0000842E  6600 0018                         99          BNE     CONT3
+00008432  1039 0000800A                    100          MOVE.B  COND_C,D0 
+00008438  0C00 0001                        101          CMPI.B  #1,D0 
+0000843C  6600 000A                        102          BNE     CONT3
+00008440  13FC 0001 00008000               103          MOVE.B  #1,FINE 
+00008448  1038 2009                        104  CONT3   MOVE.B  PIACCRA,D0      * controllo c_sus 
+0000844C  0240 0080                        105          ANDI    #%10000000,D0 
+00008450  6700 022E                        106          BEQ     RETURN 
+00008454  1039 00008007                    107          MOVE.B  END_C,D0 
+0000845A  0C00 0001                        108          CMPI.B  #1,D0 
+0000845E  6700 0220                        109          BEQ     RETURN 
+00008462  207C 00002008                    110          MOVEA.L #PIACPRA,A0 
+00008468  227C 0000800B                    111          MOVEA.L #BUFF,A1
+0000846E  1039 00008004                    112          MOVE.B  TOT,D0
+00008474  1E39 00008004                    113          MOVE.B  TOT,D7 
+0000847A  1239 00008003                    114          MOVE.B  CURR,D1 
+00008480  5240                             115          ADDQ    #1,D0
+00008482  5241                             116          ADDQ    #1,D1 
+00008484  13C0 00008004                    117          MOVE.B	D0,TOT 
+0000848A  13C1 00008003                    118          MOVE.B  D1,CURR 
+00008490  1390 7000                        119          MOVE.B  (A0),(A1,D7)
+00008494  1031 7000                        120          MOVE.B  (A1,D7),D0 
+00008498  1239 00008008                    121          MOVE.B  FASE2,D1 
+0000849E  0C01 0001                        122          CMPI.B  #1,D1 
+000084A2  6600 0012                        123          BNE     CONT4
+000084A6  0C00 0000                        124          CMPI.B  #0,D0 
+000084AA  6600 000A                        125          BNE     CONT4 
+000084AE  13FC 0001 0000800A               126          MOVE.B  #1,COND_C
+000084B6  13FC 0001 00008002               127  CONT4   MOVE.B  #1,POSS 
+000084BE  4EF9 00008680                    128          JMP     RETURN 
+000084C4  1038 2009                        129  CASE1   MOVE.B  PIACCRA,D0      * is_reading_c 
+000084C8  0240 0080                        130          ANDI    #%10000000,D0 
+000084CC  6700 01B2                        131          BEQ     RETURN 
+000084D0  1E39 00008004                    132          MOVE.B  TOT,D7 
+000084D6  1039 00008004                    133          MOVE.B  TOT,D0 
+000084DC  1239 00008003                    134          MOVE.B  CURR,D1 
+000084E2  5240                             135          ADDQ    #1,D0
+000084E4  5241                             136          ADDQ    #1,D1
+000084E6  13C0 00008004                    137          MOVE.B  D0,TOT
+000084EC  13C1 00008003                    138          MOVE.B  D1,CURR 
+000084F2  13FC 0001 00008002               139          MOVE.B  #1,POSS 
+000084FA  0C01 0003                        140          CMPI.B  #N,D1 
+000084FE  6600 00F2                        141          BNE     CONT5
+00008502  13FC 0000 00008003               142          MOVE.B  #0,CURR 
+0000850A  1039 00008005                    143          MOVE.B  MSG,D0 
+00008510  5240                             144          ADDQ    #1,D0  
+00008512  13C0 00008005                    145          MOVE.B  D0,MSG 
+00008518  13FC 0001 00008007               146          MOVE.B	#1,END_C 
+00008520  13FC 00FF 00008002               147          MOVE.B  #-1,POSS 
+00008528  1039 00008006                    148          MOVE.B  END_B,D0 
+0000852E  0C00 0001                        149          CMPI.B  #1,D0 
+00008532  6600 0028                        150          BNE     CONT6
+00008536  13FC 0000 00008006               151          MOVE.B  #0,END_B
+0000853E  13FC 0000 00008007               152          MOVE.B  #0,END_C 
+00008546  1039 00008005                    153          MOVE.B  MSG,D0 
+0000854C  0C00 0006                        154          CMPI.B  #K,D0
+00008550  6600 000A                        155          BNE     CONT6
+00008554  13FC 0001 00008008               156          MOVE.B  #1,FASE2 
+0000855C  1039 00008008                    157  CONT6   MOVE.B  FASE2,D0 
+00008562  0C00 0001                        158          CMPI.B  #1,D0 
+00008566  6600 0026                        159          BNE     CONT7
+0000856A  1039 00008009                    160          MOVE.B  COND_B,D0 
+00008570  0C00 0001                        161          CMPI.B  #1,D0 
+00008574  6600 0018                        162          BNE     CONT7 
+00008578  1039 0000800A                    163          MOVE.B  COND_C,D0 
+0000857E  0C00 0001                        164          CMPI.B  #1,D0 
+00008582  6600 000A                        165          BNE     CONT7 
+00008586  13FC 0001 00008000               166          MOVE.B  #1,FINE 
+0000858E  1039 00008006                    167  CONT7   MOVE.B  END_B,D0 
+00008594  0C00 0001                        168          CMPI.B  #1,D0 
+00008598  6700 0058                        169          BEQ     CONT5 
+0000859C  1039 00008004                    170          MOVE.B  TOT,D0 
+000085A2  1239 00008003                    171          MOVE.B  CURR,D1 
+000085A8  207C 00002004                    172          MOVEA.L #PIABPRA,A0
+000085AE  227C 0000800B                    173          MOVEA.L #BUFF,A1 
+000085B4  1390 0000                        174          MOVE.B  (A0),(A1,D0)
+000085B8  1431 0000                        175          MOVE.B  (A1,D0),D2
+000085BC  5240                             176          ADDQ    #1,D0 
+000085BE  5241                             177          ADDQ    #1,D1 
+000085C0  13C0 00008004                    178          MOVE.B  D0,TOT 
+000085C6  13C1 00008003                    179          MOVE.B  D1,CURR 
+000085CC  1639 00008008                    180          MOVE.B  FASE2,D3 
+000085D2  0C03 0001                        181          CMPI.B  #1,D3
+000085D6  6600 0012                        182          BNE     CONT8 
+000085DA  0C02 0000                        183          CMPI.B  #0,D2 
+000085DE  6600 000A                        184          BNE     CONT8 
+000085E2  13FC 0001 00008009               185          MOVE.B  #1,COND_B 
+000085EA  13FC 0000 00008002               186  CONT8   MOVE.B  #0,POSS 
+000085F2  207C 00002008                    187  CONT5   MOVEA.L #PIACPRA,A0 
+000085F8  227C 0000800B                    188          MOVEA.L #BUFF,A1 
+000085FE  1390 7000                        189          MOVE.B  (A0),(A1,D7)
+00008602  4EF9 00008680                    190          JMP     RETURN 
+00008608  1038 2009                        191  CASE2   MOVE.B  PIACCRA,D0      * is_free 
+0000860C  0240 0080                        192          ANDI    #%10000000,D0   
+00008610  6700 006E                        193          BEQ     RETURN 
+00008614  1039 00008007                    194          MOVE.B  END_C,D0 
+0000861A  0C00 0001                        195          CMPI.B  #1,D0 
+0000861E  6700 0060                        196          BEQ     RETURN 
+00008622  1039 00008004                    197          MOVE.B  TOT,D0 
+00008628  1239 00008003                    198          MOVE.B  CURR,D1 
+0000862E  207C 00002008                    199          MOVEA.L #PIACPRA,A0
+00008634  227C 0000800B                    200          MOVEA.L #BUFF,A1 
+0000863A  1E00                             201          MOVE.B  D0,D7 
+0000863C  5240                             202          ADDQ    #1,D0 
+0000863E  5241                             203          ADDQ    #1,D1 
+00008640  13C0 00008004                    204          MOVE.B  D0,TOT 
+00008646  13C1 00008003                    205          MOVE.B  D1,CURR 
+0000864C  1390 7000                        206          MOVE.B  (A0),(A1,D7)
+00008650  1431 7000                        207          MOVE.B  (A1,D7),D2 
+00008654  1639 00008008                    208          MOVE.B  FASE2,D3 
+0000865A  0C03 0001                        209          CMPI.B  #1,D3 
+0000865E  6600 0012                        210          BNE     CONT9
+00008662  0C02 0000                        211          CMPI.B  #0,D2 
+00008666  6600 000A                        212          BNE     CONT9
+0000866A  13FC 0001 0000800A               213          MOVE.B  #1,COND_C
+00008672  13FC 0001 00008002               214  CONT9   MOVE.B  #1,POSS 
+0000867A  4EF9 00008680                    215          JMP     RETURN 
+00008680  4CDF 07FF                        216  RETURN  MOVEM.L (SP)+,D0-D7/A0-A2
+00008684  4E73                             217          RTE 
+00008686                                   218           
+00008686                                   219  ****************************************************
+00008800                                   220          ORG     $8800
+00008800  48E7 FFE0                        221  ISR_C   MOVEM.L D0-D7/A0-A2,-(SP)
+00008804  1039 00008000                    222          MOVE.B  FINE,D0 
+0000880A  0C00 0001                        223          CMPI.B  #$01,D0 
+0000880E  6700 036A                        224          BEQ     RETURN2 
+00008812  4AF9 00008001                    225          TAS     LOCK 
+00008818  6600 0360                        226          BNE     RETURN2 
+0000881C  1039 00008002                    227          MOVE.B  POSS,D0
+00008822  0C00 0000                        228          CMPI.B  #0,D0 
+00008826  6700 0018                        229          BEQ     CONT10
+0000882A  1039 00008007                    230          MOVE.B  END_C,D0 
+00008830  0C00 0001                        231          CMPI.B  #1,D0 
+00008834  6700 000A                        232          BEQ     CONT10 
+00008838  13FC 0001 00008002               233          MOVE.B  #1,POSS 
+00008840  13FC 0000 00008001               234  CONT10  MOVE.B  #0,LOCK 
+00008848  1039 00008002                    235          MOVE.B  POSS,D0
+0000884E  0C00 0000                        236          CMPI.B  #0,D0 
+00008852  6700 016A                        237          BEQ     CASE11
+00008856  0C00 00FF                        238          CMPI.B  #-1,D0 
+0000885A  6700 02A6                        239          BEQ     CASE21 
+0000885E  207C 00002008                    240          MOVEA.L #PIACPRA,A0     * is_reading_c  
+00008864  227C 0000800B                    241          MOVEA.L #BUFF,A1 
+0000886A  1039 00008004                    242          MOVE.B  TOT,D0 
+00008870  1239 00008003                    243          MOVE.B  CURR,D1 
+00008876  1390 0000                        244          MOVE.B  (A0),(A1,D0)
+0000887A  1431 0000                        245          MOVE.B  (A1,D0),D2 
+0000887E  1639 00008008                    246          MOVE.B  FASE2,D3 
+00008884  0C02 0000                        247          CMPI.B  #0,D2
+00008888  6600 001A                        248          BNE     CONT11 
+0000888C  0C03 0001                        249          CMPI.B  #1,D3 
+00008890  6600 0012                        250          BNE     CONT11 
+00008894  0C01 0000                        251          CMPI.B  #0,D1 
+00008898  6600 000A                        252          BNE     CONT11
+0000889C  13FC 0001 0000800A               253          MOVE.B  #1,COND_C
+000088A4  5240                             254  CONT11  ADDQ    #1,D0
+000088A6  5241                             255          ADDQ    #1,D1 
+000088A8  13C0 00008004                    256          MOVE.B  D0,TOT 
+000088AE  13C1 00008003                    257          MOVE.B	D1,CURR 
+000088B4  0C01 0003                        258          CMPI.B  #N,D1 
+000088B8  6600 02C0                        259          BNE     RETURN2 
+000088BC  13FC 0000 00008003               260          MOVE.B  #0,CURR 
+000088C4  1039 00008005                    261          MOVE.B  MSG,D0 
+000088CA  5240                             262          ADDQ    #1,D0 
+000088CC  13C0 00008005                    263          MOVE.B  D0,MSG 
+000088D2  13FC 0001 00008007               264          MOVE.B  #1,END_C
+000088DA  13FC 00FF 00008002               265          MOVE.B  #-1,POSS
+000088E2  1239 00008006                    266          MOVE.B  END_B,D1
+000088E8  0C01 0001                        267          CMPI.B  #1,D1 
+000088EC  6600 0022                        268          BNE     CONT12 
+000088F0  13FC 0000 00008006               269          MOVE.B  #0,END_B
+000088F8  13FC 0000 00008007               270          MOVE.B  #0,END_C 
+00008900  0C00 0006                        271          CMPI.B  #K,D0 
+00008904  6600 000A                        272          BNE     CONT12 
+00008908  13FC 0001 00008008               273          MOVE.B  #1,FASE2
+00008910  1039 00008008                    274  CONT12  MOVE.B  FASE2,D0 
+00008916  0C00 0001                        275          CMPI.B  #1,D0 
+0000891A  6600 0026                        276          BNE     CONT13 
+0000891E  1039 0000800A                    277          MOVE.B  COND_C,D0 
+00008924  0C00 0001                        278          CMPI.B  #1,D0 
+00008928  6600 0018                        279          BNE     CONT13
+0000892C  1039 00008009                    280          MOVE.B  COND_B,D0 
+00008932  0C00 0001                        281          CMPI.B  #1,D0 
+00008936  6600 000A                        282          BNE     CONT13
+0000893A  13FC 0001 00008000               283          MOVE.B  #1,FINE          
+00008942  1038 2005                        284  CONT13  MOVE.B  PIABCRA,D0      * controllo_b_sus
+00008946  0240 0080                        285          ANDI    #%10000000,D0 
+0000894A  6700 022E                        286          BEQ     RETURN2 
+0000894E  1039 00008006                    287          MOVE.B  END_B,D0 
+00008954  0C00 0001                        288          CMPI.B  #1,D0 
+00008958  6700 0220                        289          BEQ     RETURN2 
+0000895C  207C 00002004                    290          MOVEA.L #PIABPRA,A0 
+00008962  227C 0000800B                    291          MOVEA.L #BUFF,A1
+00008968  1039 00008004                    292          MOVE.B  TOT,D0
+0000896E  1E39 00008004                    293          MOVE.B  TOT,D7 
+00008974  1239 00008003                    294          MOVE.B  CURR,D1 
+0000897A  5240                             295          ADDQ    #1,D0
+0000897C  5241                             296          ADDQ    #1,D1 
+0000897E  13C0 00008004                    297          MOVE.B  D0,TOT 
+00008984  13C1 00008003                    298          MOVE.B  D1,CURR 
+0000898A  1390 7000                        299          MOVE.B  (A0),(A1,D7)
+0000898E  1031 7000                        300          MOVE.B  (A1,D7),D0 
+00008992  1239 00008008                    301          MOVE.B  FASE2,D1 
+00008998  0C01 0001                        302          CMPI.B  #1,D1 
+0000899C  6600 0012                        303          BNE     CONT14
+000089A0  0C00 0000                        304          CMPI.B  #0,D0 
+000089A4  6600 000A                        305          BNE     CONT14 
+000089A8  13FC 0001 00008009               306          MOVE.B  #1,COND_B
+000089B0  13FC 0000 00008002               307  CONT14  MOVE.B  #0,POSS 
+000089B8  4EF9 00008B7A                    308          JMP     RETURN2 
+000089BE  1038 2005                        309  CASE11  MOVE.B  PIABCRA,D0      * is_reading_b 
+000089C2  0240 0080                        310          ANDI    #%10000000,D0 
+000089C6  6700 01B2                        311          BEQ     RETURN2 
+000089CA  1E39 00008004                    312          MOVE.B  TOT,D7 
+000089D0  1039 00008004                    313          MOVE.B  TOT,D0 
+000089D6  1239 00008003                    314          MOVE.B  CURR,D1 
+000089DC  5240                             315          ADDQ    #1,D0
+000089DE  5241                             316          ADDQ    #1,D1
+000089E0  13C0 00008004                    317          MOVE.B  D0,TOT
+000089E6  13C1 00008003                    318          MOVE.B  D1,CURR 
+000089EC  13FC 0000 00008002               319          MOVE.B  #0,POSS 
+000089F4  0C01 0003                        320          CMPI.B  #N,D1 
+000089F8  6600 00F2                        321          BNE     CONT15
+000089FC  13FC 0000 00008003               322          MOVE.B  #0,CURR 
+00008A04  1039 00008005                    323          MOVE.B  MSG,D0 
+00008A0A  5240                             324          ADDQ    #1,D0  
+00008A0C  13C0 00008005                    325          MOVE.B  D0,MSG 
+00008A12  13FC 0001 00008006               326          MOVE.B  #1,END_B 
+00008A1A  13FC 00FF 00008002               327          MOVE.B  #-1,POSS 
+00008A22  1039 00008007                    328          MOVE.B  END_C,D0 
+00008A28  0C00 0001                        329          CMPI.B  #1,D0 
+00008A2C  6600 0028                        330          BNE     CONT16
+00008A30  13FC 0000 00008006               331          MOVE.B  #0,END_B
+00008A38  13FC 0000 00008007               332          MOVE.B  #0,END_C 
+00008A40  1039 00008005                    333          MOVE.B  MSG,D0 
+00008A46  0C00 0006                        334          CMPI.B  #K,D0
+00008A4A  6600 000A                        335          BNE     CONT16
+00008A4E  13FC 0001 00008008               336          MOVE.B  #1,FASE2 
+00008A56  1039 00008008                    337  CONT16  MOVE.B  FASE2,D0 
+00008A5C  0C00 0001                        338          CMPI.B  #1,D0 
+00008A60  6600 0026                        339          BNE     CONT17
+00008A64  1039 0000800A                    340          MOVE.B  COND_C,D0 
+00008A6A  0C00 0001                        341          CMPI.B  #1,D0 
+00008A6E  6600 0018                        342          BNE     CONT17 
+00008A72  1039 00008009                    343          MOVE.B  COND_B,D0 
+00008A78  0C00 0001                        344          CMPI.B  #1,D0 
+00008A7C  6600 000A                        345          BNE     CONT17 
+00008A80  13FC 0001 00008000               346          MOVE.B  #1,FINE 
+00008A88  1039 00008007                    347  CONT17  MOVE.B  END_C,D0 
+00008A8E  0C00 0001                        348          CMPI.B  #1,D0 
+00008A92  6700 0058                        349          BEQ     CONT15 
+00008A96  1039 00008004                    350          MOVE.B  TOT,D0 
+00008A9C  1239 00008003                    351          MOVE.B  CURR,D1 
+00008AA2  207C 00002008                    352          MOVEA.L #PIACPRA,A0
+00008AA8  227C 0000800B                    353          MOVEA.L #BUFF,A1 
+00008AAE  1390 0000                        354          MOVE.B  (A0),(A1,D0)
+00008AB2  1431 0000                        355          MOVE.B  (A1,D0),D2
+00008AB6  5240                             356          ADDQ    #1,D0 
+00008AB8  5241                             357          ADDQ    #1,D1 
+00008ABA  13C0 00008004                    358          MOVE.B  D0,TOT 
+00008AC0  13C1 00008003                    359          MOVE.B  D1,CURR 
+00008AC6  1639 00008008                    360          MOVE.B  FASE2,D3 
+00008ACC  0C03 0001                        361          CMPI.B  #1,D3
+00008AD0  6600 0012                        362          BNE     CONT18 
+00008AD4  0C02 0000                        363          CMPI.B  #0,D2 
+00008AD8  6600 000A                        364          BNE     CONT18 
+00008ADC  13FC 0001 0000800A               365          MOVE.B  #1,COND_C 
+00008AE4  13FC 0001 00008002               366  CONT18  MOVE.B  #1,POSS 
+00008AEC  207C 00002004                    367  CONT15  MOVEA.L #PIABPRA,A0 
+00008AF2  227C 0000800B                    368          MOVEA.L #BUFF,A1 
+00008AF8  1390 7000                        369          MOVE.B  (A0),(A1,D7)
+00008AFC  4EF9 00008B7A                    370          JMP     RETURN2 
+00008B02  1038 2005                        371  CASE21	MOVE.B  PIABCRA,D0      * is_free 
+00008B06  0240 0080                        372          ANDI    #%10000000,D0   
+00008B0A  6700 006E                        373          BEQ     RETURN2 
+00008B0E  1039 00008006                    374          MOVE.B  END_B,D0 
+00008B14  0C00 0001                        375          CMPI.B  #1,D0 
+00008B18  6700 0060                        376          BEQ     RETURN2 
+00008B1C  1039 00008004                    377          MOVE.B  TOT,D0 
+00008B22  1239 00008003                    378          MOVE.B  CURR,D1 
+00008B28  207C 00002004                    379          MOVEA.L #PIABPRA,A0
+00008B2E  227C 0000800B                    380          MOVEA.L #BUFF,A1 
+00008B34  1E00                             381          MOVE.B  D0,D7 
+00008B36  5240                             382          ADDQ    #1,D0 
+00008B38  5241                             383          ADDQ    #1,D1 
+00008B3A  13C0 00008004                    384          MOVE.B  D0,TOT 
+00008B40  13C1 00008003                    385          MOVE.B  D1,CURR 
+00008B46  1390 7000                        386          MOVE.B  (A0),(A1,D7)
+00008B4A  1431 7000                        387          MOVE.B  (A1,D7),D2 
+00008B4E  1639 00008008                    388          MOVE.B  FASE2,D3 
+00008B54  0C03 0001                        389          CMPI.B  #1,D3 
+00008B58  6600 0012                        390          BNE     CONT19
+00008B5C  0C02 0000                        391          CMPI.B  #0,D2 
+00008B60  6600 000A                        392          BNE     CONT19
+00008B64  13FC 0001 00008009               393          MOVE.B  #1,COND_B
+00008B6C  13FC 0000 00008002               394  CONT19  MOVE.B  #0,POSS 
+00008B74  4EF9 00008B7A                    395          JMP     RETURN2 
+00008B7A                                   396  
+00008B7A  4CDF 07FF                        397  RETURN2 MOVEM.L (SP)+,D0-D7/A0-A2
+00008B7E  4E73                             398          RTE
+00008B80                                   399          END     MAIN
+
+No errors detected
+No warnings generated
